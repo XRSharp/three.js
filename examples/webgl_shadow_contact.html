@@ -35,7 +35,7 @@
 			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 			import Stats from 'three/addons/libs/stats.module.js';
 			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-			import { HorizontalBlurShader } from 'three/addons/shaders/HorizontalBlurShader.js';
+			import { TriangleBlurShader } from 'three/addons/shaders/TriangleBlurShader.js';
 			import { VerticalBlurShader } from 'three/addons/shaders/VerticalBlurShader.js';
 
 			let camera, scene, renderer, stats, gui;
@@ -44,7 +44,7 @@
 
 			const PLANE_WIDTH = 2.5;
 			const PLANE_HEIGHT = 2.5;
-			const CAMERA_HEIGHT = 0.3;
+			const CAMERA_HEIGHT = 0.8;
 
 			const state = {
 				shadow: {
@@ -59,7 +59,7 @@
 				showWireframe: false,
 			};
 
-			let shadowGroup, renderTarget, renderTargetBlur, shadowCamera, cameraHelper, depthMaterial, horizontalBlurMaterial, verticalBlurMaterial;
+			let shadowGroup, renderTarget, renderTargetBlur, shadowCamera, cameraHelper, depthMaterial, depthBlurMaterial, verticalBlurMaterial;
 
 			let plane, blurPlane, fillPlane;
 
@@ -103,7 +103,19 @@
 
 				}
 
+				// Create a torus geometry
+				const torusGeometry = new THREE.TorusGeometry(0.4, 0.02, 32, 100);
+				const torusMaterial = new THREE.MeshNormalMaterial();
+				const torusMesh = new THREE.Mesh(torusGeometry, torusMaterial);
 
+				// Position the torus
+				torusMesh.position.set(0.5, 0.006, 0.6);
+
+				// Rotate the torus to touch the plane at a 45 degree angle
+				torusMesh.rotation.x = Math.PI / 4; // 45 degrees in radians
+
+				// Add the torus to the scene
+				scene.add(torusMesh);
 
 				// the container, if you need to move the plane just move this
 				shadowGroup = new THREE.Group();
@@ -177,11 +189,11 @@
 				depthMaterial.depthTest = false;
 				depthMaterial.depthWrite = false;
 
-				horizontalBlurMaterial = new THREE.ShaderMaterial( HorizontalBlurShader );
-				horizontalBlurMaterial.depthTest = false;
-
-				verticalBlurMaterial = new THREE.ShaderMaterial( VerticalBlurShader );
+				verticalBlurMaterial = new THREE.ShaderMaterial(VerticalBlurShader);
 				verticalBlurMaterial.depthTest = false;
+
+				depthBlurMaterial = new THREE.ShaderMaterial(TriangleBlurShader );
+				depthBlurMaterial.depthTest = false;
 
 				//
 
@@ -256,9 +268,15 @@
 				blurPlane.visible = true;
 
 				// blur horizontally and draw in the renderTargetBlur
-				blurPlane.material = horizontalBlurMaterial;
+				blurPlane.material = depthBlurMaterial;
 				blurPlane.material.uniforms.tDiffuse.value = renderTarget.texture;
-				horizontalBlurMaterial.uniforms.h.value = amount * 1 / 256;
+				//depthBlurMaterial.uniforms.sigma.value = 1;
+				//depthBlurMaterial.uniforms.delta.value = 10;
+
+				//blurPlane.material = verticalBlurMaterial;
+				//blurPlane.material.uniforms.tDiffuse.value = renderTarget.texture;
+				//verticalBlurMaterial.uniforms.v.value = 0;
+
 
 				renderer.setRenderTarget( renderTargetBlur );
 				renderer.render( blurPlane, shadowCamera );
@@ -266,7 +284,7 @@
 				// blur vertically and draw in the main renderTarget
 				blurPlane.material = verticalBlurMaterial;
 				blurPlane.material.uniforms.tDiffuse.value = renderTargetBlur.texture;
-				verticalBlurMaterial.uniforms.v.value = amount * 1 / 256;
+				verticalBlurMaterial.uniforms.v.value = 0;
 
 				renderer.setRenderTarget( renderTarget );
 				renderer.render( blurPlane, shadowCamera );
@@ -314,7 +332,7 @@
 
 				// a second pass to reduce the artifacts
 				// (0.4 is the minimum blur amout so that the artifacts are gone)
-				blurShadow( state.shadow.blur * 0.4 );
+				//blurShadow( state.shadow.blur * 0.4 );
 
 				// reset and render the normal scene
 				renderer.setRenderTarget( null );

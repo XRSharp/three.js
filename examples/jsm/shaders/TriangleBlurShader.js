@@ -2,6 +2,7 @@ import {
 	Vector2
 } from 'three';
 
+
 /**
  * Triangle blur shader
  * based on glfx.js triangle blur shader
@@ -18,12 +19,15 @@ const TriangleBlurShader = {
 
 	uniforms: {
 
-		'texture': { value: null },
-		'delta': { value: new Vector2( 1, 1 ) }
+		'tDiffuse': { value: null },
+		'sigma': { value: 4.0 },
+		'delta': { value: new Vector2(0.002, 0.002) }
 
 	},
 
 	vertexShader: /* glsl */`
+
+		precision highp float; 
 
 		varying vec2 vUv;
 
@@ -36,14 +40,22 @@ const TriangleBlurShader = {
 
 	fragmentShader: /* glsl */`
 
+		precision highp float; // Ensure high precision for calculations
+
 		#include <common>
 
 		#define ITERATIONS 10.0
+		#define FACTOR_BETWEEN_DARK_AND_BRIGHT 600.0
 
-		uniform sampler2D texture;
+		uniform sampler2D tDiffuse;
 		uniform vec2 delta;
+		uniform float sigma;
 
 		varying vec2 vUv;
+
+		float gaussian(float x, float sigma) {
+            return exp(-0.5 * (x * x) / (sigma * sigma)) / (sigma * sqrt(2.0 * 3.14159265));
+        }
 
 		void main() {
 
@@ -51,21 +63,26 @@ const TriangleBlurShader = {
 
 			float total = 0.0;
 
-		// randomize the lookup values to hide the fixed number of samples
+			float influenceOfDarkness = (1.0 - color.a); // 0.0=not influenced, 1.0=very influenced
 
-			float offset = rand( vUv );
+			for (float y = -ITERATIONS; y <= ITERATIONS; y++) {
+                for (float x = -ITERATIONS; x <= ITERATIONS; x++) {
+					vec2 offset = delta * vec2(x, y);
+					vec4 sampleColor = texture2D(tDiffuse, vUv + offset);
+					float darkness = sampleColor.a;
+					float weight = gaussian(length(offset) * (1.0 + darkness * (influenceOfDarkness * FACTOR_BETWEEN_DARK_AND_BRIGHT)), sigma);
+					color += sampleColor * weight;
+					total += weight;		
+                }
+            }
 
-			for ( float t = -ITERATIONS; t <= ITERATIONS; t ++ ) {
+			vec4 resultingColor = color / total;
 
-				float percent = ( t + offset - 0.5 ) / ITERATIONS;
-				float weight = 1.0 - abs( percent );
+			float adjustedAlpha = pow(resultingColor.a, 0.7); 
+			vec4 adjusted = vec4(0.0, 0.0, 0.0, adjustedAlpha);
 
-				color += texture2D( texture, vUv + delta * percent ) * weight;
-				total += weight;
-
-			}
-
-			gl_FragColor = color / total;
+			gl_FragColor = adjusted;
+			
 
 		}`
 
