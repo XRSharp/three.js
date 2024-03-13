@@ -65,6 +65,16 @@ const TriangleBlurShader = {
             return sampleDepth >= sampleDistance * 40.0  && sampleDepth < 0.9999; // Because more than 0.99 means no object
         }
 
+		float random(float seed) {
+			// Constants are chosen to provide a good distribution of pseudo-random values
+			float a = 12.9898;
+			float b = 78.233;
+			float c = 43758.5453123;
+			float dt= dot(vec2(seed, seed), vec2(a, b));
+			float sn = mod(dt, 3.14); // Using 3.14 as an approximation of PI
+			return fract(sin(sn) * c);
+		}
+
 		float adjustInputDepthToBeZeroToOne(float depth) {
 			//return depth;
             return clamp((1.0 / (expectedMax - expectedMin)) * (depth - expectedMin), 0.0, 1.0);
@@ -80,9 +90,12 @@ const TriangleBlurShader = {
 
 			float influenceOfDarkness = (1.0 - color); // 0.0=not influenced, 1.0=very influenced
 
+			float randomX = rand( vUv ) - 0.5;
+			float randomY = random( randomX ) - 0.5;
+
 			for (float y = -ITERATIONS; y <= ITERATIONS; y++) {
                 for (float x = -ITERATIONS; x <= ITERATIONS; x++) {
-					vec2 offset = delta * vec2(x, y);
+					vec2 offset = delta * vec2(x + randomX, y + randomY);
 					vec4 sampleColor = texture2D(tDiffuse, vUv + offset);
 					float sampleDistance = length(offset);
 					float sampleDepth =adjustInputDepthToBeZeroToOne(1.0 - sampleColor.a); // 0.0=near, 1.0=far
