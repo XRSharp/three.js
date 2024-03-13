@@ -102,8 +102,9 @@ const TriangleBlurShader = {
 					//float weight =  gaussian(sampleDistance, 0.002) * 0.0005 / sampleDepth;// isInfluencingCurrentSample(sampleDistance, sampleDepth) ? 1.0 : 0.0; // sampleDepth > 0.99 ? 0.0 : 1.0; //gaussian(length(offset) * (1.0 + sampleDepth * (influenceOfDarkness * FACTOR_BETWEEN_DARK_AND_BRIGHT)), sigma);
 					//float weight =  0.0005 * gaussian(sampleDistance, delta.x + 0.01 * sqrt(sampleDepth)) * (1.0 - sqrt(sampleDepth));
 
-					float darkness = 0.0007 * (1.0 - pow(sampleDepth, 1.0));
-					float sigma = 0.001 + (pow(sampleDepth, 4.0) * 0.05);
+					float darkness = (1.0 - sampleDepth) * 0.130 * (1.0 - sqrt(sqrt(sqrt(sqrt(sqrt(sqrt(sampleDepth)))))));
+					darkness = darkness * 1.2 ;// + 0.0001;
+					float sigma = 0.001 + (pow(sampleDepth, 6.0) * 0.05);
 					float weight =  darkness * gaussian(sampleDistance, sigma);
 
 					//color += sampleColor * weight;
