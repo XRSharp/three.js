@@ -46,7 +46,7 @@ const TriangleBlurShader = {
 
 		#include <common>
 
-		#define ITERATIONS 5.0
+		#define ITERATIONS 10.0
 		#define FACTOR_BETWEEN_DARK_AND_BRIGHT 600.0
 
 		uniform sampler2D tDiffuse;
@@ -84,12 +84,13 @@ const TriangleBlurShader = {
                 for (float x = -ITERATIONS; x <= ITERATIONS; x++) {
 					vec2 offset = delta * vec2(x, y);
 					vec4 sampleColor = texture2D(tDiffuse, vUv + offset);
-					float sampleDistance = abs(offset.x) + abs(offset.y);// length(offset);
+					float sampleDistance = length(offset);
 					float sampleDepth =adjustInputDepthToBeZeroToOne(1.0 - sampleColor.a); // 0.0=near, 1.0=far
-					
-					float weight =  isInfluencingCurrentSample(sampleDistance, sampleDepth) ? 0.005 / (sampleDepth * sampleDepth) : 0.0;// isInfluencingCurrentSample(sampleDistance, sampleDepth) ? 1.0 : 0.0; // sampleDepth > 0.99 ? 0.0 : 1.0; //gaussian(length(offset) * (1.0 + sampleDepth * (influenceOfDarkness * FACTOR_BETWEEN_DARK_AND_BRIGHT)), sigma);
+
+					//float weight =  gaussian(sampleDistance, 0.002) * 0.0005 / sampleDepth;// isInfluencingCurrentSample(sampleDistance, sampleDepth) ? 1.0 : 0.0; // sampleDepth > 0.99 ? 0.0 : 1.0; //gaussian(length(offset) * (1.0 + sampleDepth * (influenceOfDarkness * FACTOR_BETWEEN_DARK_AND_BRIGHT)), sigma);
+					float weight =  0.0005 * gaussian(sampleDistance, delta.x + 0.01 * sqrt(sampleDepth)) * (1.0 - sqrt(sampleDepth));
 					//color += sampleColor * weight;
-					color += weight * 0.5;
+					color += weight;
 					total += 1.0;
                 }
             }
