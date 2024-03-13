@@ -21,7 +21,7 @@ const TriangleBlurShader = {
 
 		'tDiffuse': { value: null },
 		'sigma': { value: 4.0 },
-		'expectedMin': { value: 0.0 },
+		'expectedMin': { value: -0.3 },
 		'expectedMax': { value: 0.8 },
 		'delta': { value: new Vector2(0.002, 0.002) }
 
@@ -51,7 +51,6 @@ const TriangleBlurShader = {
 
 		uniform sampler2D tDiffuse;
 		uniform vec2 delta; // sampling radius
-		uniform float sigma;
 		uniform float expectedMin;
 		uniform float expectedMax;
 
@@ -101,7 +100,12 @@ const TriangleBlurShader = {
 					float sampleDepth =adjustInputDepthToBeZeroToOne(1.0 - sampleColor.a); // 0.0=near, 1.0=far
 
 					//float weight =  gaussian(sampleDistance, 0.002) * 0.0005 / sampleDepth;// isInfluencingCurrentSample(sampleDistance, sampleDepth) ? 1.0 : 0.0; // sampleDepth > 0.99 ? 0.0 : 1.0; //gaussian(length(offset) * (1.0 + sampleDepth * (influenceOfDarkness * FACTOR_BETWEEN_DARK_AND_BRIGHT)), sigma);
-					float weight =  0.0005 * gaussian(sampleDistance, delta.x + 0.01 * sqrt(sampleDepth)) * (1.0 - sqrt(sampleDepth));
+					//float weight =  0.0005 * gaussian(sampleDistance, delta.x + 0.01 * sqrt(sampleDepth)) * (1.0 - sqrt(sampleDepth));
+
+					float darkness = 0.0007 * (1.0 - sqrt(sampleDepth));
+					float sigma = 0.001 + (sampleDepth * sampleDepth * 0.05);
+					float weight =  darkness * gaussian(sampleDistance, sigma);
+
 					//color += sampleColor * weight;
 					color += weight;
 					total += 1.0;
